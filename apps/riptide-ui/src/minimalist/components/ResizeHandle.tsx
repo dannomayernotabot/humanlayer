@@ -13,15 +13,27 @@ export function ResizeHandle({ pane, edge }: { pane: PaneId; edge: 'left' | 'rig
 	const { variable, label, min, max } = PANES[pane]
 	const rows = edge === 'bottom'
 	const [size, setSize] = useState<number | null>(() => storedWidth(pane))
-	const apply = (element: HTMLElement, next: number | null) => {
-		const root = element.closest<HTMLElement>('.minimalist-ui')
-		if (next === null) root?.style.removeProperty(variable)
-		else root?.style.setProperty(variable, `${next}px`)
-		setSize(next)
-	}
 	const currentSize = (element: HTMLElement) => {
 		const rect = element.parentElement?.getBoundingClientRect()
 		return (rows ? rect?.height : rect?.width) ?? min
+	}
+	const reset = (element: HTMLElement) => {
+		element.closest<HTMLElement>('.minimalist-ui')?.style.removeProperty(variable)
+		setSize(null)
+	}
+	/**
+	 * Sets the size and returns the one kept. The stylesheet stops a list at its last entry, so a
+	 * bottom edge keeps the height that shows: a drag past the end goes no further, and the way
+	 * back starts at the last entry.
+	 */
+	const apply = (element: HTMLElement, next: number) => {
+		const root = element.closest<HTMLElement>('.minimalist-ui')
+		root?.style.setProperty(variable, `${next}px`)
+		const shown = rows ? Math.round(currentSize(element)) : next
+		const kept = shown > 0 && shown < next ? clampWidth(pane, shown) : next
+		if (kept !== next) root?.style.setProperty(variable, `${kept}px`)
+		setSize(kept)
+		return kept
 	}
 
 	const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
@@ -37,8 +49,7 @@ export function ResizeHandle({ pane, edge }: { pane: PaneId; edge: 'left' | 'rig
 		root?.classList.add(resizing)
 		const move = (moveEvent: globalThis.PointerEvent) => {
 			const delta = (rows ? moveEvent.clientY : moveEvent.clientX) - start
-			latest = clampWidth(pane, startSize + (edge === 'left' ? -delta : delta))
-			apply(handle, latest)
+			latest = apply(handle, clampWidth(pane, startSize + (edge === 'left' ? -delta : delta)))
 		}
 		const stop = () => {
 			handle.removeEventListener('pointermove', move)
@@ -57,8 +68,10 @@ export function ResizeHandle({ pane, edge }: { pane: PaneId; edge: 'left' | 'rig
 		const shrink = rows ? 'ArrowUp' : edge === 'right' ? 'ArrowLeft' : 'ArrowRight'
 		if (event.key !== grow && event.key !== shrink) return
 		event.preventDefault()
-		const next = clampWidth(pane, currentSize(event.currentTarget) + (event.key === grow ? STEP : -STEP))
-		apply(event.currentTarget, next)
+		const next = apply(
+			event.currentTarget,
+			clampWidth(pane, currentSize(event.currentTarget) + (event.key === grow ? STEP : -STEP)),
+		)
 		saveWidth(pane, next)
 	}
 
@@ -76,7 +89,7 @@ export function ResizeHandle({ pane, edge }: { pane: PaneId; edge: 'left' | 'rig
 			onPointerDown={onPointerDown}
 			onKeyDown={onKeyDown}
 			onDoubleClick={(event) => {
-				apply(event.currentTarget, null)
+				reset(event.currentTarget)
 				saveWidth(pane, null)
 			}}
 		/>

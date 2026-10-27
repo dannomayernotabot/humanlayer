@@ -4409,21 +4409,28 @@
 	 * list, and only a list longer than its share scrolls. The column can shrink below the longest
 	 * name, so names still truncate inside the panel.
 	 *
-	 * Dragging the edge under Sessions sets --task-sessions-h. The sessions row then starts at that
-	 * height instead of an equal share, but always leaves 150px for the artifacts and the task
-	 * views, so a tall drag or a shorter window never pushes them off the panel. Unset, the first
-	 * row is the same minmax(60px, auto) as the second.
+	 * Dragging the edge under Sessions sets --task-sessions-h. The sessions list then takes that
+	 * height instead of an equal share, but never more than its sessions need, and always leaves
+	 * 150px for the artifacts and the task views, so a tall drag or a shorter window never pushes
+	 * them off the panel.
+	 *
+	 * Unset, grid-template-rows refers to a missing variable, so it falls back to none and the
+	 * equal-share rows in grid-auto-rows apply. Set, the first row sizes to the sessions list.
 	 */
 	.task-nav-groups {
 		flex: 1;
 		min-height: 210px;
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
-		grid-template-rows:
-			minmax(clamp(60px, var(--task-sessions-h, 60px), 100% - 150px), var(--task-sessions-h, auto))
-			minmax(60px, auto) max-content;
+		grid-auto-rows: minmax(60px, auto) minmax(60px, auto) max-content;
+		grid-template-rows: min-content minmax(min(60px, var(--task-sessions-h)), auto) max-content;
 		align-content: start;
 		padding: 0 8px;
+		container-type: size;
+	}
+	.task-nav-sessions {
+		height: min(var(--task-sessions-h), 100cqh - 150px);
+		max-height: max-content;
 	}
 	.task-nav-group {
 		position: relative;

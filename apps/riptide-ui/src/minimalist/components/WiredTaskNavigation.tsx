@@ -74,7 +74,7 @@ export function WiredTaskNavigation({ taskId, sessionId }: { taskId: string; ses
 			<WiredTaskTools taskId={taskId} />
 			<WiredTaskDetails taskId={taskId} />
 			<nav className="task-nav-groups" aria-label="Sessions and artifacts">
-				<section className="task-nav-group" aria-label="Sessions">
+				<section className="task-nav-group task-nav-sessions" aria-label="Sessions">
 					<div className="section">
 						Sessions
 						<span className="sp" />

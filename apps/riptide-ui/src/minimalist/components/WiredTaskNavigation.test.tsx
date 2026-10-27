@@ -212,10 +212,17 @@ describe('task navigation list layout', () => {
 		expect(cssRule('.task-nav-groups')).toContain('display: grid;')
 		// Without a shrinkable column, the longest name would widen the lists past the panel.
 		expect(cssRule('.task-nav-groups')).toContain('grid-template-columns: minmax(0, 1fr);')
-		// Unset, --task-sessions-h leaves the first row at minmax(60px, auto), the same as the second.
+		// Unset, --task-sessions-h voids grid-template-rows, so both lists get these equal-share rows.
 		expect(cssRule('.task-nav-groups')).toContain(
-			'grid-template-rows: minmax(clamp(60px, var(--task-sessions-h, 60px), 100% - 150px), var(--task-sessions-h, auto)) minmax(60px, auto) max-content;',
+			'grid-auto-rows: minmax(60px, auto) minmax(60px, auto) max-content;',
 		)
+		// Set, the first row is the sessions list's own height: the dragged size, stopped at its last
+		// session, and leaving 150px for the artifacts and the task views.
+		expect(cssRule('.task-nav-groups')).toContain(
+			'grid-template-rows: min-content minmax(min(60px, var(--task-sessions-h)), auto) max-content;',
+		)
+		expect(cssRule('.task-nav-sessions')).toContain('height: min(var(--task-sessions-h), 100cqh - 150px);')
+		expect(cssRule('.task-nav-sessions')).toContain('max-height: max-content;')
 		expect(cssRule('.task-nav-groups')).toContain('align-content: start;')
 		expect(cssRule('.task-nav-group')).not.toMatch(/flex(-shrink)?:/)
 		// Changes and the pull request keep their full height in a short window.
@@ -246,12 +253,24 @@ describe('task navigation list layout', () => {
 		expect(handle.parentElement).toBe(sessions)
 		expect(handle).toHaveAttribute('aria-orientation', 'horizontal')
 		const root = handle.closest<HTMLElement>('.minimalist-ui')!
-		vi.spyOn(sessions, 'getBoundingClientRect').mockReturnValue({ height: 100, width: 220 } as DOMRect)
+		// Like the stylesheet: the list follows the variable up to its 140px of sessions.
+		vi.spyOn(sessions, 'getBoundingClientRect').mockImplementation(() => {
+			const set = Number.parseFloat(root.style.getPropertyValue('--task-sessions-h'))
+			return { height: Math.min(Number.isNaN(set) ? 100 : set, 140), width: 220 } as DOMRect
+		})
 		fireEvent.keyDown(handle, { key: 'ArrowDown' })
 		expect(root.style.getPropertyValue('--task-sessions-h')).toBe('116px')
 		expect(localStorage.getItem('hl-min-width-task-sessions')).toBe('116')
 		fireEvent.keyDown(handle, { key: 'ArrowUp' })
-		expect(root.style.getPropertyValue('--task-sessions-h')).toBe('84px')
+		expect(root.style.getPropertyValue('--task-sessions-h')).toBe('100px')
+		// Past the last session the size stops, so the way back starts there.
+		fireEvent.keyDown(handle, { key: 'ArrowDown' })
+		fireEvent.keyDown(handle, { key: 'ArrowDown' })
+		fireEvent.keyDown(handle, { key: 'ArrowDown' })
+		expect(root.style.getPropertyValue('--task-sessions-h')).toBe('140px')
+		expect(localStorage.getItem('hl-min-width-task-sessions')).toBe('140')
+		fireEvent.keyDown(handle, { key: 'ArrowUp' })
+		expect(root.style.getPropertyValue('--task-sessions-h')).toBe('124px')
 		fireEvent.doubleClick(handle)
 		expect(root.style.getPropertyValue('--task-sessions-h')).toBe('')
 		expect(localStorage.getItem('hl-min-width-task-sessions')).toBeNull()
