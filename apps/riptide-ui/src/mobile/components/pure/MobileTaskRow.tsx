@@ -20,6 +20,8 @@ export interface MobileTaskRowProps {
 	label?: SessionLabel
 	sessionCount: number
 	status: TaskStatus
+	/** Marks the task as having unseen session activity. */
+	isUnread?: boolean
 	onClick: () => void
 }
 
@@ -72,7 +74,14 @@ function renderTaskStatusIndicator(status: TaskStatus) {
  *   Bottom: label (left), session count (right)
  * Full-height chevron on the right.
  */
-export const MobileTaskRow: FC<MobileTaskRowProps> = ({ taskName, label, sessionCount, status, onClick }) => {
+export const MobileTaskRow: FC<MobileTaskRowProps> = ({
+	taskName,
+	label,
+	sessionCount,
+	status,
+	isUnread = false,
+	onClick,
+}) => {
 	const hasBottomRow = label || sessionCount > 0
 	const statusIndicator = renderTaskStatusIndicator(status)
 
@@ -91,6 +100,9 @@ export const MobileTaskRow: FC<MobileTaskRowProps> = ({ taskName, label, session
 			<div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
 				{/* Top row: title + optional status indicator (right-aligned) */}
 				<div className="flex items-center gap-2">
+					{isUnread && (
+						<span className="shrink-0 h-2 w-2 rounded-full bg-accent" aria-label="Unseen activity" />
+					)}
 					<span className="flex-1 min-w-0 text-sm font-medium truncate">{taskName}</span>
 					{statusIndicator && (
 						<div className="shrink-0 w-4 h-4 flex items-center justify-center">{statusIndicator}</div>

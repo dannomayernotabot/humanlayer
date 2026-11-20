@@ -11,7 +11,10 @@ import { useTaskMostProgressedLabel } from '@/hooks/live-queries/useTaskMostProg
 import { useTaskStatuses } from '@/hooks/live-queries/useTaskStatuses'
 import { type TaskWithActivity, useTasksByRecency } from '@/hooks/useTasksByRecency'
 import { MobileTaskRow, type TaskStatus } from '@/mobile/components/pure/MobileTaskRow'
+import { MobileTaskSectionHeader } from '@/mobile/components/pure/MobileTaskSectionHeader'
+import { useMobileTaskSections } from '@/mobile/hooks/useMobileTaskSections'
 import { MobileAppLayout } from '@/mobile/layouts/MobileAppLayout'
+import type { MobileTaskGroups } from '@/mobile/lib/groupMobileTasks'
 import type { MobileTasksTab } from '@/mobile/pages/pure/MobileTasksListPage'
 
 function computeTaskStatus(
@@ -39,7 +42,15 @@ function computeTaskStatus(
  * Per-task wired row — resolves label and status hooks for one task,
  * then renders the pure MobileTaskRow with a computed status string.
  */
-function WiredMobileTaskRow({ task, onClick }: { task: TaskWithActivity; onClick: (taskId: string) => void }) {
+function WiredMobileTaskRow({
+	task,
+	isUnread,
+	onClick,
+}: {
+	task: TaskWithActivity
+	isUnread: boolean
+	onClick: (taskId: string) => void
+}) {
 	const { label } = useTaskMostProgressedLabel(task.id)
 	const { hasNextStep } = useTaskHasNextStep(task.id)
 	const statuses = useTaskStatuses(task.id)
@@ -53,17 +64,24 @@ function WiredMobileTaskRow({ task, onClick }: { task: TaskWithActivity; onClick
 			label={label ?? undefined}
 			sessionCount={task.sessionCount}
 			status={status}
+			isUnread={isUnread}
 			onClick={() => onClick(task.id)}
 		/>
 	)
 }
+
+const SECTION_META: { key: keyof MobileTaskGroups; id: 'needs_you' | 'running' | 'recent'; label: string }[] = [
+	{ key: 'needsYou', id: 'needs_you', label: 'Needs you' },
+	{ key: 'running', id: 'running', label: 'Running' },
+	{ key: 'recent', id: 'recent', label: 'Recent' },
+]
 
 /**
  * Wired mobile tasks list page.
  * Two tabs synced to the same `tab` search param the desktop sessions page uses:
  *   My Tasks — same ownership filter as the desktop tasks tab
  *   Shared Tasks — teammates' tasks, same filter as the desktop shared tasks tab
- * Fetches tasks via useTasksByRecency and renders them as touch-friendly rows.
+ * Within each tab, tasks are grouped into Needs you / Running / Recent sections.
  */
 export function WiredMobileTasksListPage({ tab, routeTo }: { tab: SessionsRouteTab; routeTo: SessionsRouteTo }) {
 	const navigate = useNavigate()
@@ -83,6 +101,9 @@ export function WiredMobileTasksListPage({ tab, routeTo }: { tab: SessionsRouteT
 		return allTasks.filter((t) => t.resource_owner_user_id !== user.id)
 	}, [allTasks, user?.id])
 
+	const { groups: myGroups, unreadTaskIds: myUnread } = useMobileTaskSections(myTasks)
+	const { groups: sharedGroups, unreadTaskIds: sharedUnread } = useMobileTaskSections(sharedTasks)
+
 	const handleTabChange = (nextTab: MobileTasksTab) => {
 		navigate({ to: routeTo, search: { tab: nextTab === 'shared-tasks' ? 'shared-tasks' : 'tasks' } })
 	}
@@ -95,13 +116,35 @@ export function WiredMobileTasksListPage({ tab, routeTo }: { tab: SessionsRouteT
 		navigate({ to: '/tasks/new' })
 	}
 
-	const renderTaskRows = (tasks: TaskWithActivity[]) => (
-		<div className="divide-y divide-border">
-			{tasks.map((task) => (
-				<WiredMobileTaskRow key={task.id} task={task} onClick={handleTaskClick} />
-			))}
+	const renderSections = (groups: MobileTaskGroups, unreadTaskIds: Set<string>) => (
+		<div>
+			{SECTION_META.map(({ key, id, label }) => {
+				const tasks = groups[key]
+				if (tasks.length === 0) return null
+				return (
+					<section key={id}>
+						<MobileTaskSectionHeader
+							label={label}
+							count={tasks.length}
+							tone={id === 'needs_you' ? 'attention' : 'default'}
+						/>
+						<div className="divide-y divide-border">
+							{tasks.map((task) => (
+								<WiredMobileTaskRow
+									key={task.id}
+									task={task}
+									isUnread={unreadTaskIds.has(task.id)}
+									onClick={handleTaskClick}
+								/>
+							))}
+						</div>
+					</section>
+				)
+			})}
 		</div>
 	)
+
+	const myHasTasks = myTasks.length > 0
 
 	return (
 		<MobileAppLayout>
@@ -118,7 +161,9 @@ export function WiredMobileTasksListPage({ tab, routeTo }: { tab: SessionsRouteT
 				</div>
 
 				<TabsContent value="my-tasks" className="mt-0 min-h-0 flex-1 overflow-y-auto overscroll-contain">
-					{myTasks.length === 0 ? (
+					{myHasTasks ? (
+						renderSections(myGroups, myUnread)
+					) : (
 						<div className="flex flex-col items-center justify-center h-full px-6 text-center gap-4">
 							<p className="text-sm text-muted-foreground">No tasks yet.</p>
 							<Button onClick={handleNewTask} size="sm">
@@ -126,13 +171,13 @@ export function WiredMobileTasksListPage({ tab, routeTo }: { tab: SessionsRouteT
 								New Task
 							</Button>
 						</div>
-					) : (
-						renderTaskRows(myTasks)
 					)}
 				</TabsContent>
 
 				<TabsContent value="shared-tasks" className="mt-0 min-h-0 flex-1 overflow-y-auto overscroll-contain">
-					{sharedTasks.length === 0 ? (
+					{sharedTasks.length > 0 ? (
+						renderSections(sharedGroups, sharedUnread)
+					) : (
 						<div className="flex flex-col items-center justify-center h-full px-6 text-center gap-2">
 							<Users className="h-8 w-8 text-muted-foreground opacity-50" />
 							<p className="text-sm font-medium">No shared tasks</p>
@@ -140,13 +185,11 @@ export function WiredMobileTasksListPage({ tab, routeTo }: { tab: SessionsRouteT
 								Tasks shared by your teammates will appear here
 							</p>
 						</div>
-					) : (
-						renderTaskRows(sharedTasks)
 					)}
 				</TabsContent>
 			</Tabs>
 
-			{activeTab === 'my-tasks' && myTasks.length > 0 && (
+			{activeTab === 'my-tasks' && myHasTasks && (
 				<div className="shrink-0 px-4 py-3 border-t border-border">
 					<Button onClick={handleNewTask} className="w-full" size="sm">
 						<Plus className="h-4 w-4 mr-1" />

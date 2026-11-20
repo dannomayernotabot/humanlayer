@@ -5,7 +5,9 @@ import { Plus, Users } from 'lucide-react'
 import type { FC } from 'react'
 
 import { MobileTaskRow, type TaskStatus } from '@/mobile/components/pure/MobileTaskRow'
+import { MobileTaskSectionHeader } from '@/mobile/components/pure/MobileTaskSectionHeader'
 import { MobileAppLayout } from '@/mobile/layouts/MobileAppLayout'
+import type { MobileTaskBucket } from '@/mobile/lib/groupMobileTasks'
 
 export type MobileTasksTab = 'my-tasks' | 'shared-tasks'
 
@@ -15,42 +17,67 @@ export interface MobileTasksListTask {
 	label?: SessionLabel
 	sessionCount: number
 	status: TaskStatus
+	isUnread?: boolean
+}
+
+export interface MobileTasksListSection {
+	id: MobileTaskBucket
+	label: string
+	tasks: MobileTasksListTask[]
 }
 
 export interface MobileTasksListPageProps {
-	myTasks: MobileTasksListTask[]
-	sharedTasks: MobileTasksListTask[]
+	mySections: MobileTasksListSection[]
+	sharedSections: MobileTasksListSection[]
 	activeTab: MobileTasksTab
 	onTabChange: (tab: MobileTasksTab) => void
 	onTaskClick: (taskId: string) => void
 	onNewTask?: () => void
 }
 
-function renderTaskRows(tasks: MobileTasksListTask[], onTaskClick: (taskId: string) => void) {
+function hasAnyTask(sections: MobileTasksListSection[]): boolean {
+	return sections.some((section) => section.tasks.length > 0)
+}
+
+function renderSections(sections: MobileTasksListSection[], onTaskClick: (taskId: string) => void) {
 	return (
-		<div className="divide-y divide-border">
-			{tasks.map((task) => (
-				<MobileTaskRow
-					key={task.taskId}
-					taskId={task.taskId}
-					taskName={task.taskName}
-					label={task.label}
-					sessionCount={task.sessionCount}
-					status={task.status}
-					onClick={() => onTaskClick(task.taskId)}
-				/>
-			))}
+		<div>
+			{sections
+				.filter((section) => section.tasks.length > 0)
+				.map((section) => (
+					<section key={section.id}>
+						<MobileTaskSectionHeader
+							label={section.label}
+							count={section.tasks.length}
+							tone={section.id === 'needs_you' ? 'attention' : 'default'}
+						/>
+						<div className="divide-y divide-border">
+							{section.tasks.map((task) => (
+								<MobileTaskRow
+									key={task.taskId}
+									taskId={task.taskId}
+									taskName={task.taskName}
+									label={task.label}
+									sessionCount={task.sessionCount}
+									status={task.status}
+									isUnread={task.isUnread}
+									onClick={() => onTaskClick(task.taskId)}
+								/>
+							))}
+						</div>
+					</section>
+				))}
 		</div>
 	)
 }
 
 /**
- * Mobile tasks list page — My Tasks / Shared Tasks tab toggle as the top bar
- * + scrollable task rows for the active tab.
+ * Mobile tasks list page — My Tasks / Shared Tasks tab toggle + a scrollable
+ * list grouped into Needs you / Running / Recent sections for the active tab.
  */
 export const MobileTasksListPage: FC<MobileTasksListPageProps> = ({
-	myTasks,
-	sharedTasks,
+	mySections,
+	sharedSections,
 	activeTab,
 	onTabChange,
 	onTaskClick,
@@ -71,7 +98,9 @@ export const MobileTasksListPage: FC<MobileTasksListPageProps> = ({
 				</div>
 
 				<TabsContent value="my-tasks" className="mt-0 min-h-0 flex-1 overflow-y-auto overscroll-contain">
-					{myTasks.length === 0 ? (
+					{hasAnyTask(mySections) ? (
+						renderSections(mySections, onTaskClick)
+					) : (
 						<div className="flex flex-col items-center justify-center h-full px-6 text-center gap-4">
 							<p className="text-sm text-muted-foreground">No tasks yet.</p>
 							{onNewTask && (
@@ -81,13 +110,13 @@ export const MobileTasksListPage: FC<MobileTasksListPageProps> = ({
 								</Button>
 							)}
 						</div>
-					) : (
-						renderTaskRows(myTasks, onTaskClick)
 					)}
 				</TabsContent>
 
 				<TabsContent value="shared-tasks" className="mt-0 min-h-0 flex-1 overflow-y-auto overscroll-contain">
-					{sharedTasks.length === 0 ? (
+					{hasAnyTask(sharedSections) ? (
+						renderSections(sharedSections, onTaskClick)
+					) : (
 						<div className="flex flex-col items-center justify-center h-full px-6 text-center gap-2">
 							<Users className="h-8 w-8 text-muted-foreground opacity-50" />
 							<p className="text-sm font-medium">No shared tasks</p>
@@ -95,13 +124,11 @@ export const MobileTasksListPage: FC<MobileTasksListPageProps> = ({
 								Tasks shared by your teammates will appear here
 							</p>
 						</div>
-					) : (
-						renderTaskRows(sharedTasks, onTaskClick)
 					)}
 				</TabsContent>
 			</Tabs>
 
-			{activeTab === 'my-tasks' && myTasks.length > 0 && onNewTask && (
+			{activeTab === 'my-tasks' && hasAnyTask(mySections) && onNewTask && (
 				<div className="shrink-0 px-4 py-3 border-t border-border">
 					<Button onClick={onNewTask} className="w-full" size="sm">
 						<Plus className="h-4 w-4 mr-1" />

@@ -1,43 +1,87 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { MobileTasksListPage, type MobileTasksListTask } from './MobileTasksListPage'
+import {
+	MobileTasksListPage,
+	type MobileTasksListSection,
+	type MobileTasksListTask,
+} from './MobileTasksListPage'
 
-const myTasks: MobileTasksListTask[] = [
+const needsYou: MobileTasksListTask[] = [
 	{
-		taskId: 'task-1',
-		taskName: 'Fix authentication bug',
+		taskId: 'task-approval',
+		taskName: 'Wire mobile bottom navigation',
 		label: { name: 'rpi:implementation', title: 'implementation' },
+		sessionCount: 2,
+		status: 'needs_approval',
+		isUnread: true,
+	},
+	{
+		taskId: 'task-failed',
+		taskName: 'Update billing webhook handler',
+		label: { name: 'rpi:research', title: 'research' },
+		sessionCount: 1,
+		status: 'failed',
+	},
+]
+
+const running: MobileTasksListTask[] = [
+	{
+		taskId: 'task-run-1',
+		taskName: 'Fix safe-area insets on notched phones',
+		label: { name: 'rpi:implementation', title: 'implementation' },
+		sessionCount: 1,
+		status: 'running',
+		isUnread: true,
+	},
+	{
+		taskId: 'task-run-2',
+		taskName: 'Refactor the session composer',
 		sessionCount: 3,
 		status: 'running',
 	},
+]
+
+const recent: MobileTasksListTask[] = [
 	{
-		taskId: 'task-2',
-		taskName: 'Set up CI pipeline',
-		label: { name: 'rpi:worktree-setup', title: 'worktree-setup' },
-		sessionCount: 1,
-		status: 'idle',
-	},
-	{
-		taskId: 'task-3',
+		taskId: 'task-recent-1',
 		taskName: 'Improve onboarding flow',
 		label: { name: 'rpi:plan', title: 'plan' },
 		sessionCount: 0,
 		status: 'has_next_step',
 	},
+	{
+		taskId: 'task-recent-2',
+		taskName: 'Migrate oRPC procedure to Effect',
+		sessionCount: 2,
+		status: 'idle',
+	},
 ]
 
-const sharedTasks: MobileTasksListTask[] = [
+const mySections: MobileTasksListSection[] = [
+	{ id: 'needs_you', label: 'Needs you', tasks: needsYou },
+	{ id: 'running', label: 'Running', tasks: running },
+	{ id: 'recent', label: 'Recent', tasks: recent },
+]
+
+const sharedSections: MobileTasksListSection[] = [
 	{
-		taskId: 'task-4',
-		taskName: 'Migrate billing webhooks',
-		label: { name: 'rpi:research', title: 'research' },
-		sessionCount: 2,
-		status: 'needs_approval',
+		id: 'needs_you',
+		label: 'Needs you',
+		tasks: [
+			{
+				taskId: 'task-shared-1',
+				taskName: 'Review teammate migration',
+				label: { name: 'rpi:research', title: 'research' },
+				sessionCount: 2,
+				status: 'needs_approval',
+			},
+		],
 	},
 	{
-		taskId: 'task-5',
-		taskName: 'Refresh landing page copy',
-		sessionCount: 1,
-		status: 'idle',
+		id: 'recent',
+		label: 'Recent',
+		tasks: [
+			{ taskId: 'task-shared-2', taskName: 'Refresh landing page copy', sessionCount: 1, status: 'idle' },
+		],
 	},
 ]
 
@@ -51,6 +95,7 @@ const meta: Meta<typeof MobileTasksListPage> = {
 	args: {
 		onTaskClick: () => {},
 		onTabChange: () => {},
+		onNewTask: () => {},
 	},
 }
 
@@ -61,31 +106,31 @@ type Story = StoryObj<typeof MobileTasksListPage>
 export const Empty: Story = {
 	args: {
 		activeTab: 'my-tasks',
-		myTasks: [],
-		sharedTasks: [],
+		mySections: [],
+		sharedSections: [],
 	},
 }
 
-export const FewTasks: Story = {
+export const Grouped: Story = {
 	args: {
 		activeTab: 'my-tasks',
-		myTasks,
-		sharedTasks,
+		mySections,
+		sharedSections,
 	},
 }
 
 export const SharedTasks: Story = {
 	args: {
 		activeTab: 'shared-tasks',
-		myTasks,
-		sharedTasks,
+		mySections,
+		sharedSections,
 	},
 }
 
 export const SharedTasksEmpty: Story = {
 	args: {
 		activeTab: 'shared-tasks',
-		myTasks,
-		sharedTasks: [],
+		mySections,
+		sharedSections: [],
 	},
 }
