@@ -13,6 +13,10 @@ export interface MobileNeedsYouCardProps {
 	isUnread?: boolean
 	/** True while the approve request is in flight. */
 	approving?: boolean
+	/** Hide inline Approve (e.g. host offline / no permission); Reply still opens the session. */
+	approveDisabled?: boolean
+	/** Short reason shown when Approve is hidden, e.g. "Host offline". */
+	approveDisabledReason?: string
 	onReply: () => void
 	onApprove: () => void
 }
@@ -28,6 +32,8 @@ export const MobileNeedsYouCard: FC<MobileNeedsYouCardProps> = ({
 	extraCount = 0,
 	isUnread = false,
 	approving = false,
+	approveDisabled = false,
+	approveDisabledReason,
 	onReply,
 	onApprove,
 }) => {
@@ -48,20 +54,26 @@ export const MobileNeedsYouCard: FC<MobileNeedsYouCardProps> = ({
 
 				{extraCount > 0 && <p className="mt-1 text-[11px] text-muted-foreground">+{extraCount} more waiting</p>}
 
+				{approveDisabled && approveDisabledReason && (
+					<p className="mt-1 text-[11px] text-muted-foreground">{approveDisabledReason} — open to approve</p>
+				)}
+
 				<div className="mt-3 flex gap-2">
 					<Button variant="outline" size="sm" className="flex-1" onClick={onReply} disabled={approving}>
 						Reply
 					</Button>
-					<Button
-						variant="loud-success-cta"
-						size="sm"
-						className="flex-1"
-						onClick={onApprove}
-						disabled={approving}
-					>
-						<Check className="h-4 w-4" />
-						{approving ? 'Approving…' : 'Approve'}
-					</Button>
+					{!approveDisabled && (
+						<Button
+							variant="loud-success-cta"
+							size="sm"
+							className="flex-1"
+							onClick={onApprove}
+							disabled={approving}
+						>
+							<Check className="h-4 w-4" />
+							{approving ? 'Approving…' : 'Approve'}
+						</Button>
+					)}
 				</div>
 			</div>
 		</div>

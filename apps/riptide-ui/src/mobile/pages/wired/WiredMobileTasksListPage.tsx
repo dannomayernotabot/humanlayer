@@ -12,9 +12,9 @@ import { useTaskMostProgressedLabel } from '@/hooks/live-queries/useTaskMostProg
 import { useTaskStatuses } from '@/hooks/live-queries/useTaskStatuses'
 import { useApprovalActions } from '@/hooks/useApprovalActions'
 import { type TaskWithActivity, useTasksByRecency } from '@/hooks/useTasksByRecency'
-import { MobileNeedsYouCard } from '@/mobile/components/pure/MobileNeedsYouCard'
 import { MobileTaskRow, type TaskStatus } from '@/mobile/components/pure/MobileTaskRow'
 import { MobileTaskSectionHeader } from '@/mobile/components/pure/MobileTaskSectionHeader'
+import { WiredMobileNeedsYouCard } from '@/mobile/components/wired/WiredMobileNeedsYouCard'
 import { useMobilePendingApprovals } from '@/mobile/hooks/useMobilePendingApprovals'
 import { useMobileTaskSections } from '@/mobile/hooks/useMobileTaskSections'
 import { MobileAppLayout } from '@/mobile/layouts/MobileAppLayout'
@@ -154,9 +154,10 @@ export function WiredMobileTasksListPage({ tab, routeTo }: { tab: SessionsRouteT
 								const approval = id === 'needs_you' ? pendingApprovals.get(task.id) : undefined
 								if (approval) {
 									return (
-										<MobileNeedsYouCard
+										<WiredMobileNeedsYouCard
 											key={task.id}
 											taskName={task.name}
+											sessionId={approval.sessionId}
 											toolLabel={approval.toolLabel}
 											inputPreview={approval.inputPreview}
 											extraCount={Math.max(0, approval.count - 1)}

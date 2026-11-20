@@ -53,3 +53,13 @@ export const Approving: Story = {
 		approving: true,
 	},
 }
+
+export const HostOffline: Story = {
+	args: {
+		taskName: 'Update billing webhook handler',
+		toolLabel: 'Bash',
+		inputPreview: 'bun --bun run test:local:services',
+		approveDisabled: true,
+		approveDisabledReason: 'Host offline',
+	},
+}
