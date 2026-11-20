@@ -3,15 +3,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@humanlayer/ui/compone
 import { useNavigate } from '@tanstack/react-router'
 import { useAuth } from '@workos-inc/authkit-react'
 import { Plus, Users } from 'lucide-react'
-import { useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
 import type { SessionsRouteTab, SessionsRouteTo } from '@/components/sessions-page/sessionsRoute'
 import { useTaskHasNextStep } from '@/hooks/live-queries/useTaskHasNextStep'
 import { useTaskMostProgressedLabel } from '@/hooks/live-queries/useTaskMostProgressedLabel'
 import { useTaskStatuses } from '@/hooks/live-queries/useTaskStatuses'
+import { useApprovalActions } from '@/hooks/useApprovalActions'
 import { type TaskWithActivity, useTasksByRecency } from '@/hooks/useTasksByRecency'
+import { MobileNeedsYouCard } from '@/mobile/components/pure/MobileNeedsYouCard'
 import { MobileTaskRow, type TaskStatus } from '@/mobile/components/pure/MobileTaskRow'
 import { MobileTaskSectionHeader } from '@/mobile/components/pure/MobileTaskSectionHeader'
+import { useMobilePendingApprovals } from '@/mobile/hooks/useMobilePendingApprovals'
 import { useMobileTaskSections } from '@/mobile/hooks/useMobileTaskSections'
 import { MobileAppLayout } from '@/mobile/layouts/MobileAppLayout'
 import type { MobileTaskGroups } from '@/mobile/lib/groupMobileTasks'
@@ -103,6 +107,9 @@ export function WiredMobileTasksListPage({ tab, routeTo }: { tab: SessionsRouteT
 
 	const { groups: myGroups, unreadTaskIds: myUnread } = useMobileTaskSections(myTasks)
 	const { groups: sharedGroups, unreadTaskIds: sharedUnread } = useMobileTaskSections(sharedTasks)
+	const pendingApprovals = useMobilePendingApprovals()
+	const { approve } = useApprovalActions()
+	const [approvingTaskId, setApprovingTaskId] = useState<string | null>(null)
 
 	const handleTabChange = (nextTab: MobileTasksTab) => {
 		navigate({ to: routeTo, search: { tab: nextTab === 'shared-tasks' ? 'shared-tasks' : 'tasks' } })
@@ -115,6 +122,20 @@ export function WiredMobileTasksListPage({ tab, routeTo }: { tab: SessionsRouteT
 	const handleNewTask = () => {
 		navigate({ to: '/tasks/new' })
 	}
+
+	const handleApprove = useCallback(
+		async (taskId: string, approvalId: string) => {
+			setApprovingTaskId(taskId)
+			try {
+				await approve(approvalId)
+			} catch {
+				toast.error('Could not approve the request. Open the task to try again.')
+			} finally {
+				setApprovingTaskId((current) => (current === taskId ? null : current))
+			}
+		},
+		[approve],
+	)
 
 	const renderSections = (groups: MobileTaskGroups, unreadTaskIds: Set<string>) => (
 		<div>
@@ -129,14 +150,32 @@ export function WiredMobileTasksListPage({ tab, routeTo }: { tab: SessionsRouteT
 							tone={id === 'needs_you' ? 'attention' : 'default'}
 						/>
 						<div className="divide-y divide-border">
-							{tasks.map((task) => (
-								<WiredMobileTaskRow
-									key={task.id}
-									task={task}
-									isUnread={unreadTaskIds.has(task.id)}
-									onClick={handleTaskClick}
-								/>
-							))}
+							{tasks.map((task) => {
+								const approval = id === 'needs_you' ? pendingApprovals.get(task.id) : undefined
+								if (approval) {
+									return (
+										<MobileNeedsYouCard
+											key={task.id}
+											taskName={task.name}
+											toolLabel={approval.toolLabel}
+											inputPreview={approval.inputPreview}
+											extraCount={Math.max(0, approval.count - 1)}
+											isUnread={unreadTaskIds.has(task.id)}
+											approving={approvingTaskId === task.id}
+											onReply={() => handleTaskClick(task.id)}
+											onApprove={() => handleApprove(task.id, approval.approvalId)}
+										/>
+									)
+								}
+								return (
+									<WiredMobileTaskRow
+										key={task.id}
+										task={task}
+										isUnread={unreadTaskIds.has(task.id)}
+										onClick={handleTaskClick}
+									/>
+								)
+							})}
 						</div>
 					</section>
 				)

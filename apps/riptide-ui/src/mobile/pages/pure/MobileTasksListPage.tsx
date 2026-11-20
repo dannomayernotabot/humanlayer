@@ -4,12 +4,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@humanlayer/ui/compone
 import { Plus, Users } from 'lucide-react'
 import type { FC } from 'react'
 
+import { MobileNeedsYouCard } from '@/mobile/components/pure/MobileNeedsYouCard'
 import { MobileTaskRow, type TaskStatus } from '@/mobile/components/pure/MobileTaskRow'
 import { MobileTaskSectionHeader } from '@/mobile/components/pure/MobileTaskSectionHeader'
 import { MobileAppLayout } from '@/mobile/layouts/MobileAppLayout'
 import type { MobileTaskBucket } from '@/mobile/lib/groupMobileTasks'
 
 export type MobileTasksTab = 'my-tasks' | 'shared-tasks'
+
+/** The pending approval behind a Needs-you card's inline Approve action. */
+export interface MobileTaskApproval {
+	toolLabel: string
+	inputPreview?: string | null
+	/** Additional pending approvals beyond this one. */
+	extraCount?: number
+}
 
 export interface MobileTasksListTask {
 	taskId: string
@@ -18,6 +27,8 @@ export interface MobileTasksListTask {
 	sessionCount: number
 	status: TaskStatus
 	isUnread?: boolean
+	/** When set, the task renders as a Needs-you card with inline Approve. */
+	approval?: MobileTaskApproval
 }
 
 export interface MobileTasksListSection {
@@ -32,14 +43,54 @@ export interface MobileTasksListPageProps {
 	activeTab: MobileTasksTab
 	onTabChange: (tab: MobileTasksTab) => void
 	onTaskClick: (taskId: string) => void
+	/** Resolve a task's headline pending approval from its Needs-you card. */
+	onApprove?: (taskId: string) => void
+	/** Task whose approval is currently being resolved. */
+	approvingTaskId?: string | null
 	onNewTask?: () => void
+}
+
+interface RenderSectionsOptions {
+	onTaskClick: (taskId: string) => void
+	onApprove?: (taskId: string) => void
+	approvingTaskId?: string | null
 }
 
 function hasAnyTask(sections: MobileTasksListSection[]): boolean {
 	return sections.some((section) => section.tasks.length > 0)
 }
 
-function renderSections(sections: MobileTasksListSection[], onTaskClick: (taskId: string) => void) {
+function renderTask(task: MobileTasksListTask, options: RenderSectionsOptions) {
+	if (task.approval) {
+		return (
+			<MobileNeedsYouCard
+				key={task.taskId}
+				taskName={task.taskName}
+				toolLabel={task.approval.toolLabel}
+				inputPreview={task.approval.inputPreview}
+				extraCount={task.approval.extraCount}
+				isUnread={task.isUnread}
+				approving={options.approvingTaskId === task.taskId}
+				onReply={() => options.onTaskClick(task.taskId)}
+				onApprove={() => options.onApprove?.(task.taskId)}
+			/>
+		)
+	}
+	return (
+		<MobileTaskRow
+			key={task.taskId}
+			taskId={task.taskId}
+			taskName={task.taskName}
+			label={task.label}
+			sessionCount={task.sessionCount}
+			status={task.status}
+			isUnread={task.isUnread}
+			onClick={() => options.onTaskClick(task.taskId)}
+		/>
+	)
+}
+
+function renderSections(sections: MobileTasksListSection[], options: RenderSectionsOptions) {
 	return (
 		<div>
 			{sections
@@ -52,18 +103,7 @@ function renderSections(sections: MobileTasksListSection[], onTaskClick: (taskId
 							tone={section.id === 'needs_you' ? 'attention' : 'default'}
 						/>
 						<div className="divide-y divide-border">
-							{section.tasks.map((task) => (
-								<MobileTaskRow
-									key={task.taskId}
-									taskId={task.taskId}
-									taskName={task.taskName}
-									label={task.label}
-									sessionCount={task.sessionCount}
-									status={task.status}
-									isUnread={task.isUnread}
-									onClick={() => onTaskClick(task.taskId)}
-								/>
-							))}
+							{section.tasks.map((task) => renderTask(task, options))}
 						</div>
 					</section>
 				))}
@@ -81,8 +121,11 @@ export const MobileTasksListPage: FC<MobileTasksListPageProps> = ({
 	activeTab,
 	onTabChange,
 	onTaskClick,
+	onApprove,
+	approvingTaskId,
 	onNewTask,
 }) => {
+	const sectionOptions: RenderSectionsOptions = { onTaskClick, onApprove, approvingTaskId }
 	return (
 		<MobileAppLayout>
 			<Tabs
@@ -99,7 +142,7 @@ export const MobileTasksListPage: FC<MobileTasksListPageProps> = ({
 
 				<TabsContent value="my-tasks" className="mt-0 min-h-0 flex-1 overflow-y-auto overscroll-contain">
 					{hasAnyTask(mySections) ? (
-						renderSections(mySections, onTaskClick)
+						renderSections(mySections, sectionOptions)
 					) : (
 						<div className="flex flex-col items-center justify-center h-full px-6 text-center gap-4">
 							<p className="text-sm text-muted-foreground">No tasks yet.</p>
@@ -115,7 +158,7 @@ export const MobileTasksListPage: FC<MobileTasksListPageProps> = ({
 
 				<TabsContent value="shared-tasks" className="mt-0 min-h-0 flex-1 overflow-y-auto overscroll-contain">
 					{hasAnyTask(sharedSections) ? (
-						renderSections(sharedSections, onTaskClick)
+						renderSections(sharedSections, sectionOptions)
 					) : (
 						<div className="flex flex-col items-center justify-center h-full px-6 text-center gap-2">
 							<Users className="h-8 w-8 text-muted-foreground opacity-50" />

@@ -1,6 +1,8 @@
+import { describeToolInput, formatToolName } from '@/lib/approvals/describeApprovalRequest'
+
 import type { NotificationRow } from '../notification-row'
 import type { RowContext } from './row-context'
-import { firstLine, sessionName, toMillis } from './row-text'
+import { sessionName, toMillis } from './row-text'
 
 export function approvalRows(context: RowContext): NotificationRow[] {
 	const rows: NotificationRow[] = []
@@ -24,21 +26,4 @@ export function approvalRows(context: RowContext): NotificationRow[] {
 		})
 	}
 	return rows
-}
-
-function formatToolName(toolName: string): string {
-	if (!toolName.startsWith('mcp__')) return toolName
-	const parts = toolName.split('__')
-	return parts.length >= 3 ? `${parts[1]}:${parts.slice(2).join('__')}` : toolName
-}
-
-function describeToolInput(input: unknown): string | null {
-	if (input === null || input === undefined) return null
-	if (typeof input === 'object' && 'command' in input && typeof input.command === 'string') {
-		return firstLine(input.command)
-	}
-	if (typeof input === 'object' && 'file_path' in input && typeof input.file_path === 'string') {
-		return input.file_path
-	}
-	return firstLine(JSON.stringify(input))
 }

@@ -13,6 +13,21 @@ const needsYou: MobileTasksListTask[] = [
 		sessionCount: 2,
 		status: 'needs_approval',
 		isUnread: true,
+		approval: {
+			toolLabel: 'Bash',
+			inputPreview: 'bun --bun run typecheck --filter @humanlayer/riptide-ui',
+		},
+	},
+	{
+		taskId: 'task-approval-2',
+		taskName: 'Add storybook stories for mobile rows',
+		sessionCount: 1,
+		status: 'needs_approval',
+		approval: {
+			toolLabel: 'Edit',
+			inputPreview: 'apps/riptide-ui/src/mobile/components/pure/MobileTabBar.tsx',
+			extraCount: 2,
+		},
 	},
 	{
 		taskId: 'task-failed',
@@ -95,6 +110,7 @@ const meta: Meta<typeof MobileTasksListPage> = {
 	args: {
 		onTaskClick: () => {},
 		onTabChange: () => {},
+		onApprove: () => {},
 		onNewTask: () => {},
 	},
 }
