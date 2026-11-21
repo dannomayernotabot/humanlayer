@@ -17,6 +17,8 @@ import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppArchiveRouteRouteImport } from './routes/_app/archive/route'
 import { Route as AppArtifactsRouteImport } from './routes/_app/artifacts'
 import { Route as AppBoardRouteImport } from './routes/_app/board'
+import { Route as AppInboxRouteImport } from './routes/_app/inbox'
+import { Route as AppMeRouteImport } from './routes/_app/me'
 import { Route as AppPullRequestsRouteImport } from './routes/_app/pull-requests'
 import { Route as AppSessionsRouteRouteImport } from './routes/_app/sessions/route'
 import { Route as AppTasksRouteRouteImport } from './routes/_app/tasks/route'
@@ -92,6 +94,16 @@ const AppArtifactsRoute = AppArtifactsRouteImport.update({
 const AppBoardRoute = AppBoardRouteImport.update({
   id: '/board',
   path: '/board',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppInboxRoute = AppInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppMeRoute = AppMeRouteImport.update({
+  id: '/me',
+  path: '/me',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppPullRequestsRoute = AppPullRequestsRouteImport.update({
@@ -294,6 +306,8 @@ export interface FileRoutesByFullPath {
   '/tasks': typeof AppTasksRouteRouteWithChildren
   '/artifacts': typeof AppArtifactsRoute
   '/board': typeof AppBoardRoute
+  '/inbox': typeof AppInboxRoute
+  '/me': typeof AppMeRoute
   '/pull-requests': typeof AppPullRequestsRoute
   '/billing/return': typeof BillingReturnRoute
   '/settings/access-requests': typeof SettingsAccessRequestsRoute
@@ -337,6 +351,8 @@ export interface FileRoutesByTo {
   '/tasks': typeof AppTasksRouteRouteWithChildren
   '/artifacts': typeof AppArtifactsRoute
   '/board': typeof AppBoardRoute
+  '/inbox': typeof AppInboxRoute
+  '/me': typeof AppMeRoute
   '/pull-requests': typeof AppPullRequestsRoute
   '/billing/return': typeof BillingReturnRoute
   '/settings/access-requests': typeof SettingsAccessRequestsRoute
@@ -385,6 +401,8 @@ export interface FileRoutesById {
   '/_app/tasks': typeof AppTasksRouteRouteWithChildren
   '/_app/artifacts': typeof AppArtifactsRoute
   '/_app/board': typeof AppBoardRoute
+  '/_app/inbox': typeof AppInboxRoute
+  '/_app/me': typeof AppMeRoute
   '/_app/pull-requests': typeof AppPullRequestsRoute
   '/billing/return': typeof BillingReturnRoute
   '/settings/access-requests': typeof SettingsAccessRequestsRoute
@@ -434,6 +452,8 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/artifacts'
     | '/board'
+    | '/inbox'
+    | '/me'
     | '/pull-requests'
     | '/billing/return'
     | '/settings/access-requests'
@@ -477,6 +497,8 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/artifacts'
     | '/board'
+    | '/inbox'
+    | '/me'
     | '/pull-requests'
     | '/billing/return'
     | '/settings/access-requests'
@@ -524,6 +546,8 @@ export interface FileRouteTypes {
     | '/_app/tasks'
     | '/_app/artifacts'
     | '/_app/board'
+    | '/_app/inbox'
+    | '/_app/me'
     | '/_app/pull-requests'
     | '/billing/return'
     | '/settings/access-requests'
@@ -627,6 +651,20 @@ declare module '@tanstack/react-router' {
       path: '/board'
       fullPath: '/board'
       preLoaderRoute: typeof AppBoardRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/inbox': {
+      id: '/_app/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof AppInboxRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/me': {
+      id: '/_app/me'
+      path: '/me'
+      fullPath: '/me'
+      preLoaderRoute: typeof AppMeRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/_app/pull-requests': {
@@ -940,6 +978,8 @@ interface AppRouteRouteChildren {
   AppTasksRouteRoute: typeof AppTasksRouteRouteWithChildren
   AppArtifactsRoute: typeof AppArtifactsRoute
   AppBoardRoute: typeof AppBoardRoute
+  AppInboxRoute: typeof AppInboxRoute
+  AppMeRoute: typeof AppMeRoute
   AppPullRequestsRoute: typeof AppPullRequestsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppAuthSigninRoute: typeof AppAuthSigninRoute
@@ -955,6 +995,8 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppTasksRouteRoute: AppTasksRouteRouteWithChildren,
   AppArtifactsRoute: AppArtifactsRoute,
   AppBoardRoute: AppBoardRoute,
+  AppInboxRoute: AppInboxRoute,
+  AppMeRoute: AppMeRoute,
   AppPullRequestsRoute: AppPullRequestsRoute,
   AppIndexRoute: AppIndexRoute,
   AppAuthSigninRoute: AppAuthSigninRoute,

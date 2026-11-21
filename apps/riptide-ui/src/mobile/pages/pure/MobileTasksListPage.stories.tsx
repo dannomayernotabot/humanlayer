@@ -132,6 +132,7 @@ export const Grouped: Story = {
 		activeTab: 'my-tasks',
 		mySections,
 		sharedSections,
+		inboxHasAttention: true,
 	},
 }
 
